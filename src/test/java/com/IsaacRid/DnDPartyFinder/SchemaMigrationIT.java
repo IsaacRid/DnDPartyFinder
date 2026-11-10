@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-import org.testcontainers.utility.DockerImageName;
 
 /**
  * Checks that the Flyway migrations build the schema we expect, using a real PostgreSQL.
@@ -40,7 +39,7 @@ class SchemaMigrationIT {
 
 	// static = one container shared by every test in this class (started once, stopped at the end)
 	@Container
-	static PostgreSQLContainer postgres = new PostgreSQLContainer(DockerImageName.parse("postgres:latest"));
+	static PostgreSQLContainer postgres = new PostgreSQLContainer(TestImages.POSTGRES);
 
 	private Connection connection;
 

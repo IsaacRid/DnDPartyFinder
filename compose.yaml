@@ -1,6 +1,7 @@
  services:
   postgres:
-    image: 'postgres:latest'
+    # Keep in sync with TestImages.POSTGRES (src/test/java) and the Render database version
+    image: 'postgres:18'
     environment:
       - 'POSTGRES_DB=mydatabase'
       - 'POSTGRES_PASSWORD=secret'
