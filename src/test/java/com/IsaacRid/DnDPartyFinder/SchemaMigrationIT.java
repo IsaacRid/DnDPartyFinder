@@ -168,6 +168,61 @@ class SchemaMigrationIT {
 		assertSqlState(CHECK_VIOLATION, () -> insertPartyTable(dmId, 4, VALID_LATITUDE, 181.0));
 	}
 
+	// ---------- applications (a player asking to join a party table) ----------
+
+	@Test
+	void applicationsAppliesDefaults() throws SQLException {
+		long tableId = insertPartyTable(insertDm(), 4);
+		long applicationId = insertApplication(tableId, insertPlayer());
+
+		try (PreparedStatement select = connection.prepareStatement(
+				"SELECT status, version, created_at, updated_at FROM applications WHERE id = ?")) {
+			select.setLong(1, applicationId);
+
+			try (ResultSet row = select.executeQuery()) {
+				assertThat(row.next()).isTrue();
+				assertThat(row.getString("status")).isEqualTo("PENDING");
+				assertThat(row.getLong("version")).isZero();
+				assertThat(row.getTimestamp("created_at")).isNotNull();
+				assertThat(row.getTimestamp("updated_at")).isNotNull();
+			}
+		}
+	}
+
+	@Test
+	void applicationsPlayerCanOnlyApplyOnceToTable() throws SQLException {
+		long tableId = insertPartyTable(insertDm(), 4);
+		long playerId = insertPlayer();
+		insertApplication(tableId, playerId);
+
+		assertSqlState(UNIQUE_VIOLATION, () -> insertApplication(tableId, playerId));
+	}
+
+	@Test
+	void applicationsStatusMustBeKnownValue() throws SQLException {
+		long tableId = insertPartyTable(insertDm(), 4);
+		long applicationId = insertApplication(tableId, insertPlayer());
+
+		assertSqlState(CHECK_VIOLATION,
+				() -> update("UPDATE applications SET status = 'MAYBE' WHERE id = ?", applicationId));
+	}
+
+	@Test
+	void applicationsTableMustExist() throws SQLException {
+		long playerId = insertPlayer();
+		long tableIdThatDoesNotExist = 999_999L;
+
+		assertSqlState(FOREIGN_KEY_VIOLATION, () -> insertApplication(tableIdThatDoesNotExist, playerId));
+	}
+
+	@Test
+	void applicationsApplicantMustBeExistingUser() throws SQLException {
+		long tableId = insertPartyTable(insertDm(), 4);
+		long userIdThatDoesNotExist = 999_999L;
+
+		assertSqlState(FOREIGN_KEY_VIOLATION, () -> insertApplication(tableId, userIdThatDoesNotExist));
+	}
+
 	// ---------- helpers ----------
 
 	/** Runs the code and asserts it fails with the given PostgreSQL error code. */
@@ -212,6 +267,23 @@ class SchemaMigrationIT {
 			insert.setDouble(5, latitude);
 			insert.setDouble(6, longitude);
 			insert.setInt(7, seatLimit);
+
+			try (ResultSet row = insert.executeQuery()) {
+				row.next();
+				return row.getLong("id");
+			}
+		}
+	}
+
+	private long insertPlayer() throws SQLException {
+		return insertUser("player@example.com", "Player Pat");
+	}
+
+	private long insertApplication(long partyTableId, long applicantId) throws SQLException {
+		try (PreparedStatement insert = connection.prepareStatement(
+				"INSERT INTO applications (party_table_id, applicant_id) VALUES (?, ?) RETURNING id")) {
+			insert.setLong(1, partyTableId);
+			insert.setLong(2, applicantId);
 
 			try (ResultSet row = insert.executeQuery()) {
 				row.next();
