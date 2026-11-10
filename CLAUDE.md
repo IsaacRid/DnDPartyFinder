@@ -1,7 +1,7 @@
 # DnDPartyFinder
 
 ## Project context
-- In-person D&D 5e party finder. GMs post tables, players apply, GMs accept or reject applicants up to the table's seat limit.
+- In-person D&D 5e party finder. DMs post tables, players apply, DMs accept or reject applicants up to the table's seat limit.
 - Stack: Java + Spring Boot, PostgreSQL, Flyway, Testcontainers, GitHub Actions CI, deploying to Render.
 - This is a portfolio project. I own the codebase and must be able to explain every line.
 - Environment: Windows. Use `.\mvnw.cmd`, not `./mvnw`.
